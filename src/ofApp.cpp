@@ -11,6 +11,9 @@ void ofApp::setup()
     ofSetCircleResolution(20);
     camera.setPosition(w / 2, h / 2, -500);
     camera.lookAt({w / 2, h / 2, 0});
+
+    ofNoFill();
+    ofSetLineWidth(1.5);
 }
 
 //--------------------------------------------------------------
@@ -103,7 +106,7 @@ void ofApp::update()
 
     showFps();
 
-    recorder.record("/home/ezequiel/Videos/flowfield", 18, 1);
+    // recorder.record("/home/ezequiel/Videos/flowfield", 18, 1);
 }
 
 //--------------------------------------------------------------
@@ -127,7 +130,6 @@ void ofApp::draw()
 
                 camera.begin();
                 ofSetColor(ofColor::white, alphas[j]);
-                ofNoFill();
                 ofDrawCircle(point.x, point.y, point.z, length);
                 camera.end();
             }
@@ -137,7 +139,7 @@ void ofApp::draw()
 
 void ofApp::exit()
 {
-    recorder.stopRecording();
+    // recorder.stopRecording();
 }
 // //--------------------------------------------------------------
 // void ofApp::keyPressed(int key)
