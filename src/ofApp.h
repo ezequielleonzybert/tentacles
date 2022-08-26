@@ -36,12 +36,22 @@ public:
 	std::vector<glm::vec3> emitter, end;
 	std::vector<ofPolyline> lines;
 	std::vector<float> scales;
-	std::vector<int> alphas;
+	std::vector<int> alpha;
 	std::vector<float> scalar;
 	std::vector<ofMatrix4x4> matrix;
+	std::vector<ofColor> color;
 	vector<int> counter;
 	int c;
 	ofCamera camera;
+
+	// paleta
+	std::array<ofColor, 6> palette = {
+		ofColor(255),
+		ofColor(255, 85, 0),
+		ofColor(0, 18, 66),
+		ofColor(0, 0, 192),
+		ofColor(0, 206, 235),
+		ofColor(0)};
 
 	VideoRecorder recorder;
 };

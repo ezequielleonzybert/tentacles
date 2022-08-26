@@ -19,19 +19,20 @@ void ofApp::setup()
 //--------------------------------------------------------------
 void ofApp::update()
 {
-    camera.dolly(-0.2);
-    camera.rollDeg(0.05);
+    camera.dolly(-0.6);
+    // camera.rollDeg(0.05);
 
     //  creating lines
     float static time;
-    if (ofGetElapsedTimef() - time > ofRandom(.5, 2) && lines.size() < 30)
+    if (ofGetElapsedTimef() - time > ofRandom(.3, 1.7) && lines.size() < 30)
     {
         time = ofGetElapsedTimef();
         lines.push_back(ofPolyline());
         scales.push_back(1);
-        alphas.push_back(150);
-        scalar.push_back(ofRandom(1, 4));
+        alpha.push_back(150);
+        scalar.push_back(ofRandom(.05, .2));
         matrix.push_back(ofMatrix4x4());
+        color.push_back(ofColor(palette[rand() % 5], alpha.back()));
         c++;
         counter.push_back(c);
 
@@ -82,28 +83,30 @@ void ofApp::update()
         lines[i].addVertex({emitter[i]});
         glm::vec3 direction = glm::normalize(end[i] - emitter[i]);
         glm::vec3 normal = perp2D(direction);
-        glm::vec3 noise = normal * ofSignedNoise(counter[i] * 1000, ofGetElapsedTimef());
-        float length = 1;
-        emitter[i] += direction * length + noise;
-        scales[i] += 0.0003;
+        // glm::vec3 noise = normal * ofSignedNoise(counter[i] * 1000, ofGetElapsedTimef())*10;
+        float length = 10;
+        emitter[i] += direction * length; // + noise;
+
         matrix[i].glTranslate(w / 2, h / 2, 0);
-        matrix[i].glRotate(.02 * scalar[i], 0, 0, 1);
+        matrix[i].glRotate(scalar[i], 0, 0, 1);
         matrix[i].glTranslate(-w / 2, -h / 2, 0);
 
         if (end[i].z < camera.getZ() + 100)
         {
-            alphas[i] -= 1;
+            alpha[i] -= 2;
+            color[i] = (color[i], alpha[i]);
         }
 
-        if (alphas[i] <= 0)
+        if (alpha[i] <= 0)
         {
             lines.erase(lines.begin());
             scales.erase(scales.begin());
-            alphas.erase(alphas.begin());
+            alpha.erase(alpha.begin());
             emitter.erase(emitter.begin());
             end.erase(end.begin());
             scalar.erase(scalar.begin());
             matrix.erase(matrix.begin());
+            color.erase(color.begin())
         }
     }
 
@@ -119,21 +122,30 @@ void ofApp::draw()
     {
         camera.begin();
         ofMultMatrix(matrix[j]);
+        ofSetColor(color[j]);
         // draw normals
-        float width = 7.5;
+        float width = 4;
         float density = .65 * lines[j].getPerimeter();
         for (int i = 0; i < density; i++)
         {
-            float length = width - width * i / density;
+            float length = width - width * i / density; // decreasing
             glm::vec3 point = lines[j].getPointAtPercent(i / density);
-            glm::vec3 pt_screen = camera.worldToScreen(point);
-            if (pt_screen.x > -50 && pt_screen.x < w + 50)
+
+            // avoid to draw outside screen objects
+            glm::vec3 pt_screen = point; // camera.worldToScreen(point);
+            glm::mat4 m = matrix[j];
+            glm::rotate(m, -.02f * scalar[j], glm::vec3(0, 0, 1));
+            glm::vec4 v = {pt_screen, 1.f};
+            pt_screen = m * v;
+            pt_screen = camera.worldToScreen(pt_screen);
+            if (pt_screen.x > -50 && pt_screen.x < w + 50 &&
+                pt_screen.y > -50 && pt_screen.y < h + 50)
             {
                 float index = lines[j].getIndexAtPercent(i / density);
                 glm::vec3 normal = (lines[j].getNormalAtIndexInterpolated(index));
-                normal = glm::normalize(normal) * length;
+                normal = glm::normalize(normal); // * length;
+                point += normal * ofSignedNoise(i / 50.f, scalar[j] * 50, ofGetElapsedTimef() / 100.f) * 30;
 
-                ofSetColor(ofColor::white, alphas[j]);
                 ofDrawCircle(point.x, point.y, point.z, length);
             }
         }
@@ -154,7 +166,6 @@ void ofApp::exit()
 // void ofApp::keyReleased(int key)
 // {
 // }
-
 //--------------------------------------------------------------
 // void ofApp::mouseMoved(int x, int y)
 // {
