@@ -5,14 +5,17 @@
 void ofApp::setup()
 {
     ofEnableAlphaBlending();
-    ofBackground(0);
-    // ofSetVerticalSync(false);
-    // ofSetFrameRate(1000);
+    // ofBackground(palette[3]);
+
+    //  ofSetVerticalSync(false);
+    //  ofSetFrameRate(1000);
     ofSetCircleResolution(20);
     camera.setPosition(w / 2, h / 2, -500);
     camera.lookAt({w / 2, h / 2, 0});
 
-    ofNoFill();
+    fbo.allocate(w, h, GL_RGBA, 8);
+    pix.allocate(w, h, OF_IMAGE_COLOR_ALPHA);
+
     ofSetLineWidth(1.5);
 }
 
@@ -20,19 +23,19 @@ void ofApp::setup()
 void ofApp::update()
 {
     camera.dolly(-0.6);
-    // camera.rollDeg(0.05);
 
     //  creating lines
+    int start_index, end_index;
     float static time;
     if (ofGetElapsedTimef() - time > ofRandom(.3, 1.7) && lines.size() < 30)
     {
         time = ofGetElapsedTimef();
         lines.push_back(ofPolyline());
         scales.push_back(1);
-        alpha.push_back(150);
+        alpha.push_back(100);
         scalar.push_back(ofRandom(.05, .2));
         matrix.push_back(ofMatrix4x4());
-        color.push_back(ofColor(palette[rand() % 5], alpha.back()));
+        color.push_back(ofColor(palette[floor(ofRandom(0, 2))], alpha.back()));
         c++;
         counter.push_back(c);
 
@@ -44,8 +47,7 @@ void ofApp::update()
             {-0, ofRandomHeight(), camera.getZ() + 300}     // LEFT
         };
 
-        int start_index = floor(ofRandom(0, 4));
-        int end_index;
+        start_index = floor(ofRandom(0, 4));
         int r = rand() % 100;
         if (start_index == 0 || start_index == 1)
         {
@@ -81,12 +83,17 @@ void ofApp::update()
     for (int i = 0; i < (int)lines.size(); i++)
     {
         lines[i].addVertex({emitter[i]});
+        if (end[i].y == 0 || end[i].y == h) // BOT OR TOP
+        {
+            end[i].x += ofSignedNoise(scalar[i], ofGetElapsedTimef()) * 50;
+        }
+        else
+        {
+            end[i].y += ofSignedNoise(scalar[i] * 100, ofGetElapsedTimef()) * 50;
+        }
         glm::vec3 direction = glm::normalize(end[i] - emitter[i]);
-        glm::vec3 normal = perp2D(direction);
-        // glm::vec3 noise = normal * ofSignedNoise(counter[i] * 1000, ofGetElapsedTimef())*10;
         float length = 10;
-        emitter[i] += direction * length; // + noise;
-
+        emitter[i] += direction * length;
         matrix[i].glTranslate(w / 2, h / 2, 0);
         matrix[i].glRotate(scalar[i], 0, 0, 1);
         matrix[i].glTranslate(-w / 2, -h / 2, 0);
@@ -94,7 +101,7 @@ void ofApp::update()
         if (end[i].z < camera.getZ() + 100)
         {
             alpha[i] -= 2;
-            color[i] = (color[i], alpha[i]);
+            color[i] = (ofColor(color[i], alpha[i]));
         }
 
         if (alpha[i] <= 0)
@@ -106,26 +113,30 @@ void ofApp::update()
             end.erase(end.begin());
             scalar.erase(scalar.begin());
             matrix.erase(matrix.begin());
-            color.erase(color.begin())
+            color.erase(color.begin());
         }
     }
 
     showFps();
 
-    // recorder.record("/home/ezequiel/Videos/flowfield", 18, 1);
+    recorder.record("/home/ezequiel/Videos/flowfield", 20, 1);
 }
 
 //--------------------------------------------------------------
 void ofApp::draw()
 {
+    int n = ofNoise(ofGetElapsedTimef()) * 200;
+    ofBackgroundGradient(palette[2] - n, 0, OF_GRADIENT_CIRCULAR);
     for (int j = 0; j < (int)lines.size(); j++)
     {
+        // fbo.begin();
+        // fbo.clear();
         camera.begin();
         ofMultMatrix(matrix[j]);
         ofSetColor(color[j]);
         // draw normals
         float width = 4;
-        float density = .65 * lines[j].getPerimeter();
+        float density = 1.2f * lines[j].getPerimeter();
         for (int i = 0; i < density; i++)
         {
             float length = width - width * i / density; // decreasing
@@ -134,28 +145,33 @@ void ofApp::draw()
             // avoid to draw outside screen objects
             glm::vec3 pt_screen = point; // camera.worldToScreen(point);
             glm::mat4 m = matrix[j];
-            glm::rotate(m, -.02f * scalar[j], glm::vec3(0, 0, 1));
+            glm::rotate(m, scalar[j], glm::vec3(0, 0, 1));
             glm::vec4 v = {pt_screen, 1.f};
             pt_screen = m * v;
             pt_screen = camera.worldToScreen(pt_screen);
-            if (pt_screen.x > -50 && pt_screen.x < w + 50 &&
-                pt_screen.y > -50 && pt_screen.y < h + 50)
+            if (pt_screen.x > -100 && pt_screen.x < w + 100 &&
+                pt_screen.y > -100 && pt_screen.y < h + 100)
             {
                 float index = lines[j].getIndexAtPercent(i / density);
                 glm::vec3 normal = (lines[j].getNormalAtIndexInterpolated(index));
                 normal = glm::normalize(normal); // * length;
-                point += normal * ofSignedNoise(i / 50.f, scalar[j] * 50, ofGetElapsedTimef() / 100.f) * 30;
-
+                point += normal * ofSignedNoise(i / 50.f, scalar[j] * 50, ofGetElapsedTimef() / 100.f) * 25;
+                ofNoFill();
                 ofDrawCircle(point.x, point.y, point.z, length);
             }
         }
         camera.end();
+        // fbo.end();
+        // fbo.readToPixels(pix);
     }
+    // fbo.draw(0, 0);
+    // img.setFromPixels(pix);
+    // img.draw(0, 0);
 }
 
 void ofApp::exit()
 {
-    // recorder.stopRecording();
+    recorder.stopRecording();
 }
 // //--------------------------------------------------------------
 // void ofApp::keyPressed(int key)

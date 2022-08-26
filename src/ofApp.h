@@ -43,14 +43,17 @@ public:
 	vector<int> counter;
 	int c;
 	ofCamera camera;
+	ofFbo fbo;
+	ofImage img;
+	ofPixels pix;
 
 	// paleta
 	std::array<ofColor, 6> palette = {
 		ofColor(255),
 		ofColor(255, 85, 0),
-		ofColor(0, 18, 66),
 		ofColor(0, 0, 192),
 		ofColor(0, 206, 235),
+		ofColor(0, 18, 66),
 		ofColor(0)};
 
 	VideoRecorder recorder;
