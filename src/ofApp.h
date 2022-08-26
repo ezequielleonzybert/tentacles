@@ -36,7 +36,6 @@ public:
 	std::vector<glm::vec3> emitter, end;
 	std::vector<ofPolyline> lines;
 	std::vector<float> scales;
-	std::vector<float> rotations;
 	std::vector<int> alphas;
 	std::vector<float> scalar;
 	std::vector<ofMatrix4x4> matrix;

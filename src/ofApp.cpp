@@ -6,8 +6,8 @@ void ofApp::setup()
 {
     ofEnableAlphaBlending();
     ofBackground(0);
-    ofSetVerticalSync(false);
-    ofSetFrameRate(1000);
+    // ofSetVerticalSync(false);
+    // ofSetFrameRate(1000);
     ofSetCircleResolution(20);
     camera.setPosition(w / 2, h / 2, -500);
     camera.lookAt({w / 2, h / 2, 0});
@@ -29,9 +29,9 @@ void ofApp::update()
         time = ofGetElapsedTimef();
         lines.push_back(ofPolyline());
         scales.push_back(1);
-        rotations.push_back(0);
         alphas.push_back(150);
-        scalar.push_back(ofRandom(.3, .7));
+        scalar.push_back(ofRandom(1, 4));
+        matrix.push_back(ofMatrix4x4());
         c++;
         counter.push_back(c);
 
@@ -85,8 +85,11 @@ void ofApp::update()
         glm::vec3 noise = normal * ofSignedNoise(counter[i] * 1000, ofGetElapsedTimef());
         float length = 1;
         emitter[i] += direction * length + noise;
-        rotations[i] += .05 * scalar[i];
         scales[i] += 0.0003;
+        matrix[i].glTranslate(w / 2, h / 2, 0);
+        matrix[i].glRotate(.02 * scalar[i], 0, 0, 1);
+        matrix[i].glTranslate(-w / 2, -h / 2, 0);
+
         if (end[i].z < camera.getZ() + 100)
         {
             alphas[i] -= 1;
@@ -99,8 +102,8 @@ void ofApp::update()
             alphas.erase(alphas.begin());
             emitter.erase(emitter.begin());
             end.erase(end.begin());
-            rotations.erase(rotations.begin());
             scalar.erase(scalar.begin());
+            matrix.erase(matrix.begin());
         }
     }
 
@@ -114,6 +117,8 @@ void ofApp::draw()
 {
     for (int j = 0; j < (int)lines.size(); j++)
     {
+        camera.begin();
+        ofMultMatrix(matrix[j]);
         // draw normals
         float width = 7.5;
         float density = .65 * lines[j].getPerimeter();
@@ -128,12 +133,11 @@ void ofApp::draw()
                 glm::vec3 normal = (lines[j].getNormalAtIndexInterpolated(index));
                 normal = glm::normalize(normal) * length;
 
-                camera.begin();
                 ofSetColor(ofColor::white, alphas[j]);
                 ofDrawCircle(point.x, point.y, point.z, length);
-                camera.end();
             }
         }
+        camera.end();
     }
 }
 
