@@ -50,7 +50,7 @@ public:
 	// paleta
 	std::array<ofColor, 6> palette = {
 		ofColor(255),
-		ofColor(255, 85, 0),
+		ofColor(255, 120, 0),
 		ofColor(0, 0, 192),
 		ofColor(0, 206, 235),
 		ofColor(0, 18, 66),

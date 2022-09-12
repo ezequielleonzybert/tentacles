@@ -6,7 +6,6 @@ void ofApp::setup()
 {
     ofEnableAlphaBlending();
     // ofBackground(palette[3]);
-
     //  ofSetVerticalSync(false);
     //  ofSetFrameRate(1000);
     ofSetCircleResolution(20);
@@ -16,22 +15,21 @@ void ofApp::setup()
     fbo.allocate(w, h, GL_RGBA, 8);
     pix.allocate(w, h, OF_IMAGE_COLOR_ALPHA);
 
-    ofSetLineWidth(1.5);
+    // ofSetLineWidth(1.5);
 }
 
 //--------------------------------------------------------------
 void ofApp::update()
 {
-    camera.dolly(-0.6);
+    camera.dolly(-1.6);
 
     //  creating lines
     int start_index, end_index;
     float static time;
-    if (ofGetElapsedTimef() - time > ofRandom(.3, 1.7) && lines.size() < 30)
+    if (ofGetElapsedTimef() - time > ofRandom(.5, 1.75) && lines.size() < 15)
     {
         time = ofGetElapsedTimef();
         lines.push_back(ofPolyline());
-        scales.push_back(1);
         alpha.push_back(100);
         scalar.push_back(ofRandom(.05, .2));
         matrix.push_back(ofMatrix4x4());
@@ -41,10 +39,10 @@ void ofApp::update()
 
         // possible endpoints
         glm::vec3 endpoints[4] = {
-            {ofRandomWidth(), h + 0, camera.getZ() + 300},  // BOTTOM
-            {ofRandomWidth(), -0, camera.getZ() + 300},     // TOP
-            {w + 0, ofRandomHeight(), camera.getZ() + 300}, // RIGHT
-            {-0, ofRandomHeight(), camera.getZ() + 300}     // LEFT
+            {ofRandomWidth(), w * 1.8, camera.getZ() + 600},  // BOTTOM
+            {ofRandomWidth(), -w * .8, camera.getZ() + 600},  // TOP
+            {w * 1.8, ofRandomHeight(), camera.getZ() + 600}, // RIGHT
+            {-w * .8, ofRandomHeight(), camera.getZ() + 600}  // LEFT
         };
 
         start_index = floor(ofRandom(0, 4));
@@ -98,7 +96,7 @@ void ofApp::update()
         matrix[i].glRotate(scalar[i], 0, 0, 1);
         matrix[i].glTranslate(-w / 2, -h / 2, 0);
 
-        if (end[i].z < camera.getZ() + 100)
+        if (end[i].z < camera.getZ() + 50)
         {
             alpha[i] -= 2;
             color[i] = (ofColor(color[i], alpha[i]));
@@ -107,7 +105,6 @@ void ofApp::update()
         if (alpha[i] <= 0)
         {
             lines.erase(lines.begin());
-            scales.erase(scales.begin());
             alpha.erase(alpha.begin());
             emitter.erase(emitter.begin());
             end.erase(end.begin());
@@ -119,7 +116,11 @@ void ofApp::update()
 
     showFps();
 
-    recorder.record("/home/ezequiel/Videos/flowfield", 20, 1);
+    recorder.record("/home/ezequiel/Videos/flowfield", 18);
+    if (ofGetFrameNum() > 3600)
+    {
+        ofExit();
+    }
 }
 
 //--------------------------------------------------------------
@@ -127,13 +128,15 @@ void ofApp::draw()
 {
     int n = ofNoise(ofGetElapsedTimef()) * 200;
     ofBackgroundGradient(palette[2] - n, 0, OF_GRADIENT_CIRCULAR);
-    for (int j = 0; j < (int)lines.size(); j++)
+    for (int j = 0; j < (int)lines.size(); j++) // debería ser al reves para dibujar las lineas nuevas atras
     {
         // fbo.begin();
         // fbo.clear();
         camera.begin();
         ofMultMatrix(matrix[j]);
         ofSetColor(color[j]);
+        float lineWidth = ofMap(camera.getZ() - emitter[j].z, -300, 0, .5, 3);
+        ofSetLineWidth(lineWidth);
         // draw normals
         float width = 4;
         float density = 1.2f * lines[j].getPerimeter();
