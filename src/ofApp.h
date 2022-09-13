@@ -31,8 +31,8 @@ public:
 		ofSetWindowTitle(strm.str());
 	};
 
-	int w = ofGetWidth();
-	int h = ofGetHeight();
+	int w = 3200;
+	int h = 1080;
 	std::vector<glm::vec3> emitter, end;
 	std::vector<ofPolyline> lines;
 	std::vector<float> scales;
@@ -44,17 +44,21 @@ public:
 	int c;
 	ofCamera camera;
 	ofFbo fbo;
-	ofImage img;
 	ofPixels pix;
 
 	// paleta
 	std::array<ofColor, 6> palette = {
 		ofColor(255),
-		ofColor(255, 120, 0),
+		ofColor(255, 90, 0),
 		ofColor(0, 0, 192),
 		ofColor(0, 206, 235),
 		ofColor(0, 18, 66),
 		ofColor(0)};
+
+	float dist = 1500;
+	float fov = camera.getFov() * PI / 180;
+	float dif = tan(fov / 2) * dist;
+	float len = w / 2 + dif*1.1;
 
 	VideoRecorder recorder;
 };

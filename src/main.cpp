@@ -4,7 +4,7 @@
 //========================================================================
 int main()
 {
-	int n = 2;
+	int n = 4;
 	ofSetupOpenGL(3200/n, 1080/n, OF_WINDOW); // <-------- setup the GL context
 
 	// this kicks off the running of my app

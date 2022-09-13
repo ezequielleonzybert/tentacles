@@ -5,30 +5,30 @@
 void ofApp::setup()
 {
     ofEnableAlphaBlending();
-    // ofBackground(palette[3]);
-    //  ofSetVerticalSync(false);
-    //  ofSetFrameRate(1000);
     ofSetCircleResolution(20);
-    camera.setPosition(w / 2, h / 2, -500);
-    camera.lookAt({w / 2, h / 2, 0});
+    camera.setPosition(0, 0, -500);
+    camera.lookAt({0, 0, 0});
+
+    ofEnableSmoothing();
 
     fbo.allocate(w, h, GL_RGBA, 8);
-    pix.allocate(w, h, OF_IMAGE_COLOR_ALPHA);
 
-    // ofSetLineWidth(1.5);
+    pix.allocate(w, h, OF_IMAGE_COLOR);
 }
 
 //--------------------------------------------------------------
 void ofApp::update()
 {
-    camera.dolly(-1.6);
+    camera.dolly(-3.5);
 
     //  creating lines
     int start_index, end_index;
-    float static time;
-    if (ofGetElapsedTimef() - time > ofRandom(.5, 1.75) && lines.size() < 15)
+    float static frame, frame_random = 0;
+    if (ofGetFrameNum() - frame > frame_random && lines.size() < 60)
     {
-        time = ofGetElapsedTimef();
+        cout << lines.size() << endl;
+        frame = ofGetFrameNum();
+        frame_random = ofRandom(0, 20);
         lines.push_back(ofPolyline());
         alpha.push_back(100);
         scalar.push_back(ofRandom(.05, .2));
@@ -36,13 +36,12 @@ void ofApp::update()
         color.push_back(ofColor(palette[floor(ofRandom(0, 2))], alpha.back()));
         c++;
         counter.push_back(c);
-
         // possible endpoints
         glm::vec3 endpoints[4] = {
-            {ofRandomWidth(), w * 1.8, camera.getZ() + 600},  // BOTTOM
-            {ofRandomWidth(), -w * .8, camera.getZ() + 600},  // TOP
-            {w * 1.8, ofRandomHeight(), camera.getZ() + 600}, // RIGHT
-            {-w * .8, ofRandomHeight(), camera.getZ() + 600}  // LEFT
+            {ofRandom(-len / 2, len / 2), -len, camera.getZ() + dist}, // TOP
+            {ofRandom(-len / 2, len / 2), len, camera.getZ() + dist},  // BOTTOM
+            {-len, ofRandom(-len / 2, len / 2), camera.getZ() + dist}, // LEFT
+            {len, ofRandom(-len / 2, len / 2), camera.getZ() + dist}   // RIGHT
         };
 
         start_index = floor(ofRandom(0, 4));
@@ -81,20 +80,18 @@ void ofApp::update()
     for (int i = 0; i < (int)lines.size(); i++)
     {
         lines[i].addVertex({emitter[i]});
-        if (end[i].y == 0 || end[i].y == h) // BOT OR TOP
+        if (end[i].y == -len || end[i].y == len) // BOT OR TOP
         {
-            end[i].x += ofSignedNoise(scalar[i], ofGetElapsedTimef()) * 50;
+            end[i].x += ofSignedNoise(scalar[i], ofGetFrameNum() / 10) * 1000;
         }
         else
         {
-            end[i].y += ofSignedNoise(scalar[i] * 100, ofGetElapsedTimef()) * 50;
+            end[i].y += ofSignedNoise(scalar[i] * 100, ofGetFrameNum() / 10) * 1000;
         }
         glm::vec3 direction = glm::normalize(end[i] - emitter[i]);
-        float length = 10;
+        float length = 50;
         emitter[i] += direction * length;
-        matrix[i].glTranslate(w / 2, h / 2, 0);
         matrix[i].glRotate(scalar[i], 0, 0, 1);
-        matrix[i].glTranslate(-w / 2, -h / 2, 0);
 
         if (end[i].z < camera.getZ() + 50)
         {
@@ -116,8 +113,8 @@ void ofApp::update()
 
     showFps();
 
-    recorder.record("/home/ezequiel/Videos/flowfield", 18);
-    if (ofGetFrameNum() > 3600)
+    // recorder.record("/home/ezequiel/Videos/flowfield", 18);
+    if (ofGetFrameNum() > 2000)
     {
         ofExit();
     }
@@ -126,19 +123,23 @@ void ofApp::update()
 //--------------------------------------------------------------
 void ofApp::draw()
 {
-    int n = ofNoise(ofGetElapsedTimef()) * 200;
+
+    float f = ofGetElapsedTimef() * 60 / (ofGetFrameNum() * 3 + 1);
+    int n = ofNoise(f) * 200;
+
+    fbo.begin();
+    ofClear(0, 0, 0, 0);
     ofBackgroundGradient(palette[2] - n, 0, OF_GRADIENT_CIRCULAR);
     for (int j = 0; j < (int)lines.size(); j++) // debería ser al reves para dibujar las lineas nuevas atras
     {
-        // fbo.begin();
-        // fbo.clear();
         camera.begin();
         ofMultMatrix(matrix[j]);
         ofSetColor(color[j]);
         float lineWidth = ofMap(camera.getZ() - emitter[j].z, -300, 0, .5, 3);
         ofSetLineWidth(lineWidth);
+
         // draw normals
-        float width = 4;
+        float width = h / 100;
         float density = 1.2f * lines[j].getPerimeter();
         for (int i = 0; i < density; i++)
         {
@@ -163,13 +164,13 @@ void ofApp::draw()
                 ofDrawCircle(point.x, point.y, point.z, length);
             }
         }
+
         camera.end();
-        // fbo.end();
-        // fbo.readToPixels(pix);
     }
-    // fbo.draw(0, 0);
-    // img.setFromPixels(pix);
-    // img.draw(0, 0);
+    fbo.end();
+    fbo.draw(0, 0, ofGetWidth(), ofGetHeight());
+    fbo.readToPixels(pix);
+    recorder.recordPix(pix, "/home/ezequiel/Videos/flowfield", 18);
 }
 
 void ofApp::exit()
